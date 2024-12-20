@@ -1,22 +1,23 @@
+// Target: Handling error
+// 1. import express
 const express = require("express");
+//2. initialize express as app
 const app = express();
+//3. parse express json to app
 app.use(express.json());
-
+//4. create express router
 const router = express.Router();
-
-//catchAsync function to handle the response and error
+//5. catchAsync function to handle the errors
 function catchAsync(fn) {
   return function (req, res, next) {
     try {
-      fn(req, res, next);
-    } catch (err) {
-      console.log(err.message);
-      next(err);
+      fn(req, res);
+    } catch (error) {
+      next(error);
     }
   };
 }
-
-//Error constructor
+//6. ApiError constructor
 class ApiError extends Error {
   constructor(message, arg1, arg2) {
     super(message);
@@ -24,31 +25,26 @@ class ApiError extends Error {
     this.arg2 = arg2;
   }
 }
-
-//create controller
-// const controller = catchAsync((req, res) => {
-//   console.log("base");
-//   throw new ApiError("dummy error!", "base error", "custom error");
-//   res.send({ message: "base url!" });
-// });
-
+//7. create controller
 const controller = catchAsync((req, res) => {
-  console.log("base");
-  throw new ApiError("error1", "err2", "err3");
-  res.send({ message: "base url" });
+  console.log("inside controller");
+  throw new ApiError("error message content", "error-1", "error-2");
+  res.send({ message: "response from controller" });
 });
 
+//7. initialize get request on "/base" route
 router.get("/base", controller);
 
-app.use("/v1", router);
-
+//8. define a callback function to handle the error
 const errorHandler = (err, req, res, next) => {
   console.log("From error middleware", err.message);
   res.status(500).send({ ...err, message: err.message });
 };
 
-app.use(errorHandler);
+//9. define a route
+app.use("/v1", router, errorHandler);
 
+//11. start the server
 app.listen(3000, () => {
-  console.log("server running...");
+  console.log("server running");
 });
